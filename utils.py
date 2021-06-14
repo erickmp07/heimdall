@@ -152,11 +152,11 @@ def draw_outputs(image, boxes, objectness, classes, numbers, class_names):
         if (len(class_names) <= class_names_index):
             break
 
-        image = cv2.putText(image, '{}: {:.4f}%'.format(
+        image = cv2.putText(image, '{}: {:.2f}%'.format(
             class_names[class_names_index],
             objectness[i] * 100),
                 (x1y1),
-                cv2.FONT_HERSHEY_PLAIN, 
+                cv2.FONT_HERSHEY_SIMPLEX, 
                 1,
                 (0, 0, 255),
                 2)
