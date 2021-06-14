@@ -16,6 +16,8 @@ from yolov3 import YOLOv3Net
 import cv2
 import time
 import sys
+import os
+import os.path
 
 #physical_devices = tf.config.experimental.list_physical_devices('GPU')
 #assert len(physical_devices) > 0, "Not enough GPU hardware devices available"
@@ -44,10 +46,29 @@ def main(iou_threshold, confidence_threshold, input_name):
     # 0 means input from cam 0.
     # For video, just change the 0 to video path
     video_input = 0
+    file_name = "live"
+
+    video_output_dir = "YOLOv3/data/videos/"
+
     if not str(input_name).isnumeric():
         video_input = input_name
 
+        dir_name = os.path.basename(input_name)
+            
+        file_name_and_extension_splitted = os.path.basename(dir_name).split('.') 
+        file_name = file_name_and_extension_splitted[0]
+
     capture = cv2.VideoCapture(video_input)
+
+    frame_size = (capture.get(cv2.CAP_PROP_FRAME_WIDTH), capture.get(cv2.CAP_PROP_FRAME_HEIGHT))
+    fourcc = cv2.VideoWriter_fourcc(*'MJPG')
+    output_fps = capture.get(cv2.CAP_PROP_FPS)
+
+    video_output = cv2.VideoWriter( \
+        video_output_dir + file_name + '_detection.avi',
+        fourcc,
+        output_fps,
+        (int(frame_size[0]), int(frame_size[1])))
 
     try:
         while True:
@@ -88,6 +109,8 @@ def main(iou_threshold, confidence_threshold, input_name):
             fps = 1 / seconds
             print("Estimated frames per second: {0}".format(fps))
 
+            video_output.write(frame)
+
             # If the 'q' key is pressed, the script stops 
             key = cv2.waitKey(1) & 0xFF
 
@@ -97,6 +120,7 @@ def main(iou_threshold, confidence_threshold, input_name):
         cv2.destroyAllWindows()
         capture.release()
         print('Detections have been performed successfully.')
+        print('The video detection is available at \'YOLOv3/data/videos/\' .')
 
 if __name__ == '__main__':
     main(float(sys.argv[1]), float(sys.argv[2]), sys.argv[3])
