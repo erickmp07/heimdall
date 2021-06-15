@@ -4,7 +4,7 @@ Usage:
     python video.py <iou threshold> <confidence threshold> <filename>
 
 Example:
-    python video.py 0.5 0.5 YOLOv3/data/video/video01.mp4 # For video file input
+    python video.py 0.5 0.5 YOLOv3/data/videos/video01.mp4 # For video file input
     python video.py 0.5 0.5 0 # For cam input
 
 Note: Only one video can be processed at one run.
@@ -48,8 +48,6 @@ def main(iou_threshold, confidence_threshold, input_name):
     video_input = 0
     file_name = "live"
 
-    video_output_dir = "YOLOv3/data/videos/"
-
     if not str(input_name).isnumeric():
         video_input = input_name
 
@@ -60,15 +58,7 @@ def main(iou_threshold, confidence_threshold, input_name):
 
     capture = cv2.VideoCapture(video_input)
 
-    frame_size = (capture.get(cv2.CAP_PROP_FRAME_WIDTH), capture.get(cv2.CAP_PROP_FRAME_HEIGHT))
-    fourcc = cv2.VideoWriter_fourcc(*'MJPG')
-    output_fps = capture.get(cv2.CAP_PROP_FPS)
-
-    video_output = cv2.VideoWriter( \
-        video_output_dir + file_name + '_detection.avi',
-        fourcc,
-        output_fps,
-        (int(frame_size[0]), int(frame_size[1])))
+    video_output = createVideoOutputStream(capture, file_name)
 
     try:
         while True:
@@ -121,6 +111,29 @@ def main(iou_threshold, confidence_threshold, input_name):
         capture.release()
         print('Detections have been performed successfully.')
         print('The video detection is available at \'YOLOv3/data/videos/\' .')
+
+def createVideoOutputStream(capture, file_name):
+    """Creates the video output (video detection) stream.
+
+    Args:
+        capture: The video input stream.
+        file_name: The file name of the video input.
+
+    Returns:
+    """
+    video_output_dir = "YOLOv3/data/videos/"
+
+    frame_size = (capture.get(cv2.CAP_PROP_FRAME_WIDTH), capture.get(cv2.CAP_PROP_FRAME_HEIGHT))
+    fourcc = cv2.VideoWriter_fourcc(*'MJPG')
+    output_fps = capture.get(cv2.CAP_PROP_FPS)
+
+    video_output = cv2.VideoWriter( \
+        video_output_dir + file_name + '_detection.avi',
+        fourcc,
+        output_fps,
+        (int(frame_size[0]), int(frame_size[1])))
+
+    return video_output
 
 if __name__ == '__main__':
     main(float(sys.argv[1]), float(sys.argv[2]), sys.argv[3])
