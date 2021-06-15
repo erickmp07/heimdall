@@ -120,6 +120,7 @@ def createVideoOutputStream(capture, file_name):
         file_name: The file name of the video input.
 
     Returns:
+        The video output (video detection) stream created.
     """
     video_output_dir = "YOLOv3/data/videos/"
 
