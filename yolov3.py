@@ -111,7 +111,7 @@ def YOLOv3Net(cfgfile, model_size, number_of_classes):
             block["layers"] = block["layers"].split(',')
             start = int(block["layers"][0])
 
-            # Layer with one value means that if we are in this route block, we need to backward 4 layers and 
+            # Layer with one value means that if we are in this route block, we need to backward 'start' layers and 
             # then output the feature map from that layer
             if len(block["layers"]) > 1:
                 end = int(block["layers"][1]) - i
