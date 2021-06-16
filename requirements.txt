@@ -1,0 +1,5 @@
+tensorflow
+numpy
+cv2
+time
+opencv-python
