@@ -20,11 +20,12 @@ import os.path
 
 physical_devices = tf.config.experimental.list_physical_devices('GPU')
 assert len(physical_devices) > 0, "Not enough GPU hardware devices available"
-tf.config.experimental.set_memory_growth(physical_devices[0], True)
+for device in physical_devices:
+        tf.config.experimental.set_memory_growth(device, True)
 
 model_size = (416, 416, 3)
 number_of_classes = 80
-class_name = 'YOLOv3/data/coco.names'
+class_name = os.path.join('YOLOv3', 'data', 'coco.names')
 max_output_size = 100
 max_output_size_per_class = 20
 
