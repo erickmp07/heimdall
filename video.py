@@ -29,8 +29,8 @@ class_name = 'YOLOv3/data/coco.names'
 max_output_size = 100
 max_output_size_per_class = 20
 
-cfgfile = 'YOLOv3/configuration/yolov3.cfg'
-weightfile = 'YOLOv3/weights/yolov3_weights.tf'
+cfgfile = os.path.join('YOLOv3', 'configuration', 'yolov3.cfg')
+weightfile = os.path.join('YOLOv3', 'weights', 'yolov3_weights.tf')
 
 def main(iou_threshold, confidence_threshold, input_name):
     # Creates the model
@@ -39,7 +39,7 @@ def main(iou_threshold, confidence_threshold, input_name):
 
     classes_names = load_class_names(class_name)
 
-    window_name = 'Yolov3 video detection'
+    window_name = 'Yolo V3 video detection'
     cv2.namedWindow(winname=window_name)
 
     # Specify the video input.
@@ -62,8 +62,6 @@ def main(iou_threshold, confidence_threshold, input_name):
 
     try:
         while True:
-            start = time.time()
-            
             # Reads the video stream
             ret, frame = capture.read()
             if not ret:
@@ -91,14 +89,6 @@ def main(iou_threshold, confidence_threshold, input_name):
             # Shows the video frame with the boxes
             cv2.imshow(window_name, image)
 
-            stop = time.time()
-
-            seconds = stop - start
-
-            # Calculates the frames per second
-            fps = 1 / seconds
-            print("Estimated frames per second: {0}".format(fps))
-
             video_output.write(frame)
 
             # If the 'q' key is pressed, the script stops 
@@ -122,7 +112,7 @@ def createVideoOutputStream(capture, file_name):
     Returns:
         The video output (video detection) stream created.
     """
-    video_output_dir = "YOLOv3/data/videos/"
+    video_output_dir = os.path.join('YOLOv3', 'data', 'videos')
 
     frame_size = (capture.get(cv2.CAP_PROP_FRAME_WIDTH), capture.get(cv2.CAP_PROP_FRAME_HEIGHT))
     fourcc = cv2.VideoWriter_fourcc(*'MJPG')

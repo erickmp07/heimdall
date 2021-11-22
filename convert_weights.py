@@ -1,5 +1,6 @@
 """Loads Yolo v3 pretrained weights and saves them in tensorflow format."""
 
+import os
 import numpy as np
 from yolov3 import YOLOv3Net
 from yolov3 import parse_cfg
@@ -76,9 +77,9 @@ def load_weights(model, cfgfile, weightfile):
 def main():
 
     # Weight file path
-    weightfile = "YOLOv3/weights/yolov3.weights"
+    weightfile = os.path.join('YOLOv3', 'weights', 'yolov3.weights')
     # Configuration file path
-    cfgfile = "YOLOv3/configuration/yolov3.cfg"
+    cfgfile = os.path.join('YOLOv3', 'configuration', 'yolov3.cfg')
 
     model_size = (416, 416, 3)
     number_of_classes = 80
@@ -90,7 +91,8 @@ def main():
     load_weights(model, cfgfile, weightfile)
 
     try:
-        model.save_weights('YOLOv3/weights/yolov3_weights.tf')
+        save_weight_path = os.path.join('YOLOv3', 'weights', 'yolov3_weights.tf')
+        model.save_weights(save_weight_path)
         print('\nThe file \'yolov3_weights.tf\' has been saved successfully.')
     except IOError:
         print("Couldn't write the file \'yolov3_weights.tf\'.")
