@@ -6,9 +6,11 @@ from matplotlib import pyplot as plt
 import tarfile
 import uuid
 from datetime import datetime
+import sys
 
-from tensorflow.keras.models import Model
 from tensorflow.keras.layers import Layer, Conv2D, Dense, MaxPooling2D, Input, Flatten
+from tensorflow.keras.models import Model
+from tensorflow.keras.metrics import Precision, Recall
 from tensorflow.keras.optimizers import Adam
 from tensorflow.python.data.ops.dataset_ops import PrefetchDataset, ShuffleDataset
 from tensorflow.python.keras.losses import BinaryCrossentropy
@@ -23,6 +25,8 @@ ANCHOR_PATH = os.path.join('data', 'anchor')
 
 # Train constants
 EPOCHS = 50
+
+MODEL_NAME = 'siamesemodel.h5'
 
 
 
@@ -158,6 +162,8 @@ def connect_to_cam():
 
 
 def augmentation_images_collected(path: str):
+    print(f"{datetime.now()} : INFO - Doing image augmentation from path '{path}'. It's may take a while...")
+
     augmented_images = []
     
     for file_name in os.listdir(os.path.join(path)):
@@ -331,7 +337,61 @@ def train(data: PrefetchDataset, EPOCHS: int, siamese_model: Model, binary_cross
             checkpoint.save(file_prefix=checkpoint_prefix)
 
 
-def main():
+def make_prediction_to_test(test_data, siamese_model):
+    print(f"{datetime.now()} : INFO - Making predictions with the test data")
+    # Get a batch of test data
+    test_input, test_val, y_true = test_data.as_numpy_iterator().next()
+
+    # Make predictions
+    y_hat = siamese_model.predict([test_input, test_val])
+
+    # Post processing the results
+    [1 if prediction > 0.5 else 0 for prediction in y_hat]
+
+    # Creating a metric object
+    recall = Recall()
+
+    # Calculating the recall value
+    recall.update_state(y_true, y_hat)
+
+    # Return Recall result
+    recall_result = recall.result().numpy()
+
+    print(f'Recall result: {recall_result}')
+
+    # Creating a metric object
+    precision = Precision()
+
+    # Calculating the recall value
+    precision.update_state(y_true, y_hat)
+
+    # Return Recall result
+    precision_result = precision.result().numpy()
+
+    print(f'Precision result: {precision_result}')
+
+    for index, predict_result in enumerate(y_true):
+        if (predict_result == 1):
+            print('Plotting twin images')
+        else:
+            print('Plotting different images')
+
+        # Set plot size
+        plt.figure(figsize=(10, 8))
+
+        # Set first subplot
+        plt.subplot(1, 2, 1)
+        plt.imshow(test_input[index])
+
+        # Set second subplot
+        plt.subplot(1, 2, 2)
+        plt.imshow(test_val[index])
+
+        # Renders
+        plt.show()
+
+
+def main(train_flag, test_flag):
     set_gpu_growth()
 
     make_data_dirs()
@@ -362,8 +422,33 @@ def main():
     checkpoint_prefix = os.path.join(checkpoint_directory, 'ckpt')
     checkpoint = tf.train.Checkpoint(opt=optimizer, siamese_model=siamese_model)
 
-    train(train_data, EPOCHS, siamese_model, binary_cross_loss, optimizer, checkpoint, checkpoint_prefix)
+    if (train_flag == 'train'):
+        train(train_data, EPOCHS, siamese_model, binary_cross_loss, optimizer, checkpoint, checkpoint_prefix)
+
+    # Load the the model or the latest checkpoint
+    if (os.path.exists(MODEL_NAME)):
+        siamese_model = tf.keras.models.load_model(MODEL_NAME, custom_objects={'L1Dist':L1Dist, 'BinaryCrossentropy':tf.losses.BinaryCrossentropy})
+    else:
+        checkpoint.restore(tf.train.latest_checkpoint(checkpoint_directory)).expect_partial()
+        
+        siamese_model = checkpoint.siamese_model
+        optimizer = checkpoint.opt
+
+    if (test_flag == 'test'):
+        make_prediction_to_test(test_data, siamese_model)
+
+    # Save weights
+    print(f"{datetime.now()} : INFO - Saving the model with name: '{MODEL_NAME}'")
+    siamese_model.save(MODEL_NAME)
+    print(f"{datetime.now()} : INFO - Model '{MODEL_NAME}' saved")
 
 
 if __name__ == '__main__':
-    main()
+    argv_length = len(sys.argv)
+
+    if argv_length == 1:
+        main('', '')
+    elif argv_length == 2:
+        main(sys.argv[1], '')
+    elif argv_length == 3:
+        main(sys.argv[1], sys.argv[2])
