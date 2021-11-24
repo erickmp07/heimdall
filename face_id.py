@@ -22,6 +22,8 @@ import tensorflow as tf
 POSITIVE_PATH = os.path.join('data', 'positive')
 NEGATIVE_PATH = os.path.join('data', 'negative')
 ANCHOR_PATH = os.path.join('data', 'anchor')
+VERIFICATION_PATH = os.path.join('application_data', 'verification_images')
+INPUT_PATH = os.path.join('application_data', 'input_image')
 
 # Train constants
 EPOCHS = 50
@@ -68,6 +70,14 @@ def make_data_dirs():
     if (not os.path.exists(ANCHOR_PATH)):
         print(f'{datetime.now()} : INFO - Making ANCHOR directory > {ANCHOR_PATH}')
         os.makedirs(ANCHOR_PATH)
+
+    if (not os.path.exists(VERIFICATION_PATH)):
+        print(f'{datetime.now()} : INFO - Making VERIFICATION directory > {VERIFICATION_PATH}')
+        os.makedirs(VERIFICATION_PATH)
+
+    if (not os.path.exists(INPUT_PATH)):
+        print(f'{datetime.now()} : INFO - Making INPUT directory > {INPUT_PATH}')
+        os.makedirs(INPUT_PATH)
 
 
 def extract_lfw_data():
@@ -117,12 +127,39 @@ def data_augmentation(image):
     return data
 
 
-def connect_to_cam():
+def verify(model, detection_threshold, verification_threshold):
+    # Build results array
+    results = []
+
+    for image in os.listdir(VERIFICATION_PATH):
+        input_image = preprocess(os.path.join(INPUT_PATH, 'input_image.jpg'))
+        validation_image = preprocess(os.path.join(VERIFICATION_PATH, image))
+
+        # Make predictions
+        result = model.predict(list(np.expand_dims([input_image, validation_image], axis=1)))
+
+        results.append(result)
+
+    # Detection Threshold: Metric above which a prediction is considered positive
+    detection = np.sum(np.array(results) > detection_threshold)
+    
+    # Verification Threshold: Proportion of positive predictions / total positive samples
+    verification = detection / len(os.listdir(VERIFICATION_PATH))
+    verified = verification > verification_threshold
+
+    return results, verified
+
+
+def connect_to_cam(mode, title, siamese_model=None, detection_threshold=0.5, verification_threshold=0.5):
     """ 
     Establish a connection to the webcam
     """
     print(f'{datetime.now()} : INFO - Opening the cam')
-    print(f"{datetime.now()} : INFO - Type 'a' for collect anchor image; 'p' for collect positive image; 'q' for quit")
+    if (mode == 0):
+        print(f"{datetime.now()} : INFO - Type 'a' for collect anchor image; 'p' for collect positive image; 'q' for quit")
+    else:
+        print(f"{datetime.now()} : INFO - Type 'v' for verify; 'q' for quit")
+
     capture = cv2.VideoCapture(0)
     while capture.isOpened():
         ret, frame = capture.read()
@@ -131,7 +168,7 @@ def connect_to_cam():
         frame = frame[120:120+250, 200:200+250, :]
 
         # Collect anchors
-        if cv2.waitKey(1) & 0xFF == ord('a'):
+        if cv2.waitKey(1) & 0xFF == ord('a') and mode == 0:
             # Create the unique file path
             imgname = os.path.join(ANCHOR_PATH, '{}.jpg'.format(uuid.uuid4()))
 
@@ -139,7 +176,7 @@ def connect_to_cam():
             cv2.imwrite(imgname, frame)
 
         # Collect positives
-        if cv2.waitKey(1) & 0xFF == ord('p'):
+        if cv2.waitKey(1) & 0xFF == ord('p') and mode == 0:
             # Create the unique file path
             imgname = os.path.join(
                 POSITIVE_PATH, '{}.jpg'.format(uuid.uuid4()))
@@ -147,8 +184,17 @@ def connect_to_cam():
             # Write out anchor image
             cv2.imwrite(imgname, frame)
 
+        # Verification trigger
+        if cv2.waitKey(1) & 0xFF == ord('v') and mode == 1:
+            # Save input image to application_data/input_image folder
+            cv2.imwrite(os.path.join('application_data', 'input_image', 'input_image.jpg'), frame)
+
+            # Run verification
+            results, verified = verify(siamese_model, detection_threshold, verification_threshold)
+            print(verified)
+
         # Show image back to screen
-        cv2.imshow('Image Collection', frame)
+        cv2.imshow(title, frame)
 
         # Breaking gracefully
         if cv2.waitKey(1) & 0xFF == ord('q'):
@@ -391,7 +437,7 @@ def make_prediction_to_test(test_data, siamese_model):
         plt.show()
 
 
-def main(train_flag, test_flag):
+def main(detection_threshold, verification_threshold, train_flag, test_flag):
     set_gpu_growth()
 
     make_data_dirs()
@@ -400,7 +446,7 @@ def main(train_flag, test_flag):
 
     move_lfw_images_to_negative_folder()
 
-    connect_to_cam()
+    connect_to_cam(0, 'Image Collection')
 
     #augmentation_images_collected(ANCHOR_PATH)
     #augmentation_images_collected(POSITIVE_PATH)
@@ -442,13 +488,21 @@ def main(train_flag, test_flag):
     siamese_model.save(MODEL_NAME)
     print(f"{datetime.now()} : INFO - Model '{MODEL_NAME}' saved")
 
+    print(f"{datetime.now()} : INFO - Opening the verification mode")
+
+    connect_to_cam(1, 'Verification', siamese_model, detection_threshold, verification_threshold)
+
 
 if __name__ == '__main__':
     argv_length = len(sys.argv)
 
     if argv_length == 1:
-        main('', '')
+        main(0.5, 0.5, '', '')
     elif argv_length == 2:
-        main(sys.argv[1], '')
+        main(float(sys.argv[1]), 0.5, '', '')
     elif argv_length == 3:
-        main(sys.argv[1], sys.argv[2])
+        main(float(sys.argv[1]), float(sys.argv[2]), '', '')
+    elif argv_length == 4:
+        main(float(sys.argv[1]), float(sys.argv[2]), sys.argv[3], '')
+    elif argv_length == 5:
+        main(float(sys.argv[1]), float(sys.argv[2]), sys.argv[3], sys.argv[4])
