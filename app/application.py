@@ -18,9 +18,17 @@ class HeimdallApp(App):
 
     def build(self):
         # Main layout components
-        self.image1 = Image(size_hint=(1, 0.8))
+        self.image = Image(size_hint=(1, 0.8))
         self.button = Button(text='Verify', size_hint=(1, 0.1))
         self.verification = Label(text="Verification Uninitiated", size_hint=(1, 0.1))
+
+        # Add items to layout
+        layout = BoxLayout(orientation='vertical')
+        layout.add_widget(self.image)
+        layout.add_widget(self.button)
+        layout.add_widget(self.verification)
+
+        return layout
 
 
 if __name__ == '__main__':
