@@ -253,7 +253,7 @@ def augmentation_images_collected(path: str):
 
 def preprocess(file_path):
     """
-    Scale and rezie an image to 0..1 range
+    Scale image to 100x100 px and resize an image to 0..1 range
     """
 
     # Read in image from file path
