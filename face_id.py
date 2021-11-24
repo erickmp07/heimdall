@@ -214,9 +214,14 @@ def connect_to_cam_to_verify(siamese_model, detection_threshold, verification_th
             # Save input image to application_data/input_image folder
             cv2.imwrite(os.path.join('application_data', 'input_image', 'input_image.jpg'), frame)
 
+            print(f"{datetime.now()} : Doing Verification...")
+
             # Run verification
             results, verified = verify(siamese_model, detection_threshold, verification_threshold)
-            print(verified)
+
+            print(f"{datetime.now()} : Verification result: {verified}")
+            print(f"{datetime.now()} : INFO - Type 'v' for verify; 'q' for quit")
+
 
         # Show image back to screen
         cv2.imshow('Verification', frame)
@@ -287,10 +292,13 @@ def build_dataloader():
     negative = tf.data.Dataset.list_files(NEGATIVE_PATH+'\*.jpg').take(number_of_images_to_take)
 
     # Take some positive examples and copy to verification folder
-    for image_name in os.listdir(POSITIVE_PATH)[:round(min_path_length * 0.02)]:
+    images_to_copy_length = len(os.listdir(POSITIVE_PATH)[:round(min_path_length * 0.015)])
+
+    for index, image_name in enumerate(os.listdir(POSITIVE_PATH)[:round(min_path_length * 0.015)]):
         image_path = os.path.join(POSITIVE_PATH, image_name)
         image = cv2.imread(image_path)
         cv2.imwrite(os.path.join(VERIFICATION_PATH, image_name), np.array(image))
+        print(f"{datetime.now()} : INFO - Copying images from POSITIVE path to VERIFICATION path: {index + 1} of {images_to_copy_length} copied.")
 
     positives = tf.data.Dataset.zip(
         (anchor, positive, tf.data.Dataset.from_tensor_slices(tf.ones(len(anchor)))))
