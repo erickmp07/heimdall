@@ -150,15 +150,12 @@ def verify(model, detection_threshold, verification_threshold):
     return results, verified
 
 
-def connect_to_cam(mode, title, siamese_model=None, detection_threshold=0.5, verification_threshold=0.5):
+def connect_to_cam_to_collect_images():
     """ 
     Establish a connection to the webcam
     """
     print(f'{datetime.now()} : INFO - Opening the cam')
-    if (mode == 0):
-        print(f"{datetime.now()} : INFO - Type 'a' for collect anchor image; 'p' for collect positive image; 'q' for quit")
-    else:
-        print(f"{datetime.now()} : INFO - Type 'v' for verify; 'q' for quit")
+    print(f"{datetime.now()} : INFO - Type 'a' for collect anchor image; 'p' for collect positive image; 'q' for quit")
 
     capture = cv2.VideoCapture(0)
     while capture.isOpened():
@@ -168,7 +165,7 @@ def connect_to_cam(mode, title, siamese_model=None, detection_threshold=0.5, ver
         frame = frame[120:120+250, 200:200+250, :]
 
         # Collect anchors
-        if cv2.waitKey(1) & 0xFF == ord('a') and mode == 0:
+        if cv2.waitKey(1) & 0xFF == ord('a'):
             # Create the unique file path
             imgname = os.path.join(ANCHOR_PATH, '{}.jpg'.format(uuid.uuid4()))
 
@@ -176,7 +173,7 @@ def connect_to_cam(mode, title, siamese_model=None, detection_threshold=0.5, ver
             cv2.imwrite(imgname, frame)
 
         # Collect positives
-        if cv2.waitKey(1) & 0xFF == ord('p') and mode == 0:
+        if cv2.waitKey(1) & 0xFF == ord('p'):
             # Create the unique file path
             imgname = os.path.join(
                 POSITIVE_PATH, '{}.jpg'.format(uuid.uuid4()))
@@ -184,8 +181,36 @@ def connect_to_cam(mode, title, siamese_model=None, detection_threshold=0.5, ver
             # Write out anchor image
             cv2.imwrite(imgname, frame)
 
+        # Show image back to screen
+        cv2.imshow('Image Collection', frame)
+
+        # Breaking gracefully
+        if cv2.waitKey(1) & 0xFF == ord('q'):
+            break
+
+    # Release the webcam
+    capture.release()
+
+    # Close the image show frame
+    cv2.destroyAllWindows()
+
+
+def connect_to_cam_to_verify(siamese_model, detection_threshold, verification_threshold):
+    """ 
+    Establish a connection to the webcam
+    """
+    print(f'{datetime.now()} : INFO - Opening the cam')
+    print(f"{datetime.now()} : INFO - Type 'v' for verify; 'q' for quit")
+
+    capture = cv2.VideoCapture(0)
+    while capture.isOpened():
+        ret, frame = capture.read()
+
+        # Cut down frame to 250x250px
+        frame = frame[120:120+250, 200:200+250, :]
+
         # Verification trigger
-        if cv2.waitKey(1) & 0xFF == ord('v') and mode == 1:
+        if cv2.waitKey(1) & 0xFF == ord('v'):
             # Save input image to application_data/input_image folder
             cv2.imwrite(os.path.join('application_data', 'input_image', 'input_image.jpg'), frame)
 
@@ -194,7 +219,7 @@ def connect_to_cam(mode, title, siamese_model=None, detection_threshold=0.5, ver
             print(verified)
 
         # Show image back to screen
-        cv2.imshow(title, frame)
+        cv2.imshow('Verification', frame)
 
         # Breaking gracefully
         if cv2.waitKey(1) & 0xFF == ord('q'):
@@ -250,9 +275,22 @@ def build_dataloader():
     """
     Build dataloader pipeline
     """
-    anchor = tf.data.Dataset.list_files(ANCHOR_PATH+'\*.jpg').take(3000)
-    positive = tf.data.Dataset.list_files(POSITIVE_PATH+'\*.jpg').take(3000)
-    negative = tf.data.Dataset.list_files(NEGATIVE_PATH+'\*.jpg').take(3000)
+    anchor_length = len(os.listdir(ANCHOR_PATH))
+    positive_length = len(os.listdir(POSITIVE_PATH))
+    negative_length = len(os.listdir(NEGATIVE_PATH))
+
+    min_path_length = min(anchor_length, positive_length, negative_length)
+    number_of_images_to_take = round(min_path_length * 0.85)
+
+    anchor = tf.data.Dataset.list_files(ANCHOR_PATH+'\*.jpg').take(number_of_images_to_take)
+    positive = tf.data.Dataset.list_files(POSITIVE_PATH+'\*.jpg').take(number_of_images_to_take)
+    negative = tf.data.Dataset.list_files(NEGATIVE_PATH+'\*.jpg').take(number_of_images_to_take)
+
+    # Take some positive examples and copy to verification folder
+    for image_name in os.listdir(POSITIVE_PATH)[:round(min_path_length * 0.02)]:
+        image_path = os.path.join(POSITIVE_PATH, image_name)
+        image = cv2.imread(image_path)
+        cv2.imwrite(os.path.join(VERIFICATION_PATH, image_name), np.array(image))
 
     positives = tf.data.Dataset.zip(
         (anchor, positive, tf.data.Dataset.from_tensor_slices(tf.ones(len(anchor)))))
@@ -446,7 +484,7 @@ def main(detection_threshold, verification_threshold, train_flag, test_flag):
 
     move_lfw_images_to_negative_folder()
 
-    connect_to_cam(0, 'Image Collection')
+    connect_to_cam_to_collect_images()
 
     #augmentation_images_collected(ANCHOR_PATH)
     #augmentation_images_collected(POSITIVE_PATH)
@@ -490,7 +528,7 @@ def main(detection_threshold, verification_threshold, train_flag, test_flag):
 
     print(f"{datetime.now()} : INFO - Opening the verification mode")
 
-    connect_to_cam(1, 'Verification', siamese_model, detection_threshold, verification_threshold)
+    connect_to_cam_to_verify(siamese_model, detection_threshold, verification_threshold)
 
 
 if __name__ == '__main__':
