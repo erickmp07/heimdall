@@ -28,6 +28,9 @@ class HeimdallApp(App):
         layout.add_widget(self.button)
         layout.add_widget(self.verification)
 
+        # Setup video capture device
+        self.capture = cv2.VideoCapture(0)
+
         return layout
 
 
