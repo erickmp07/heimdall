@@ -59,6 +59,9 @@ def set_gpu_growth():
 
 
 def make_data_dirs():
+    """
+    Make the directories, if they don't exists, necessary for the application
+    """
     # Make the directories
     if (not os.path.exists(POSITIVE_PATH)):
         print(f'{datetime.now()} : INFO - Making POSITIVE directory > {POSITIVE_PATH}')
@@ -386,7 +389,7 @@ def make_siamese_model(embedding: Model):
 @tf.function
 def train_step(batch, siamese_model: Model, binary_cross_loss: BinaryCrossentropy, optimizer: Adam):
 
-    # Record allo of our operations
+    # Record all operations
     with tf.GradientTape() as tape:
         # Get anchor and positive/negative image
         x = batch[:2]
@@ -399,8 +402,6 @@ def train_step(batch, siamese_model: Model, binary_cross_loss: BinaryCrossentrop
 
         # Calculate Loss
         loss = binary_cross_loss(y, yhat)
-
-    print(f'Loss: {loss}')
 
     # Calculate gradients
     gradient = tape.gradient(loss, siamese_model.trainable_variables)
@@ -495,8 +496,8 @@ def main(detection_threshold, verification_threshold, train_flag, test_flag):
 
     connect_to_cam_to_collect_images()
 
-    #augmentation_images_collected(ANCHOR_PATH)
-    #augmentation_images_collected(POSITIVE_PATH)
+    augmentation_images_collected(ANCHOR_PATH)
+    augmentation_images_collected(POSITIVE_PATH)
 
     data = build_dataloader()
 
