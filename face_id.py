@@ -24,10 +24,12 @@ ANCHOR_PATH = os.path.join('data', 'anchor')
 VERIFICATION_PATH = os.path.join('application_data', 'verification_images')
 INPUT_PATH = os.path.join('application_data', 'input_image')
 
-# Train constants
+# Train constant
 EPOCHS = 50
 
 MODEL_NAME = 'siamesemodel.h5'
+
+VIDEO_INDEX = 0
 
 
 
@@ -156,7 +158,7 @@ def connect_to_cam_to_collect_images():
     print(f'{datetime.now()} : INFO - Opening the cam')
     print(f"{datetime.now()} : INFO - Type 'a' for collect anchor image; 'p' for collect positive image; 'q' for quit")
 
-    capture = cv2.VideoCapture(0)
+    capture = cv2.VideoCapture(VIDEO_INDEX)
     while capture.isOpened():
         ret, frame = capture.read()
 
@@ -201,7 +203,7 @@ def connect_to_cam_to_verify(siamese_model, detection_threshold, verification_th
     print(f'{datetime.now()} : INFO - Opening the cam')
     print(f"{datetime.now()} : INFO - Type 'v' for verify; 'q' for quit")
 
-    capture = cv2.VideoCapture(0)
+    capture = cv2.VideoCapture(VIDEO_INDEX)
     while capture.isOpened():
         ret, frame = capture.read()
 
