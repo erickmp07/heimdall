@@ -8,6 +8,7 @@ The heimdall is an application developed in Python version 3.7.9 64-bit.
 
 - [Install](#install)
 - [Usage](#usage)
+- [Known Issues](#known-issues)
 - [Technologies](#technologies)
 - [Contributing](#contributing)
 - [License](#license)
@@ -127,6 +128,14 @@ You should collect some positive (hitting the "p" key) and anchor (hitting the "
 
 Then, a new dialog will open with your cam image. Now, you can test the facial recognition.
 Hit the "v" key for verify if your face will be recognized or hit the "q" key for quit the recognition.
+
+## Known issues
+
+- When running the YOLO Proof Of Concept or the Face ID project, the TensorFlow may not find "cusolver64_10.dll". To solve this, rename the "cusolver64_11.dll" in the CUDA bin folder to "cusolver64_10.dll".
+
+- If your cam is being used by another task, an exception will be raised while the OpenCV tries to establish a connection with your cam. If possile, end the task that is using the cam and try again. 
+
+- If you have more than one cam, the script may not find the correct cam while running. To solve this, change the value of the `VIDEO_INDEX` constant and try again.
 
 ## Technologies
 
