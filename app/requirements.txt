@@ -1,5 +1,0 @@
-kivy[full]
-tensorflow==2.4.1
-tensorflow-gpu==2.4.1
-numpy
-opencv-python
